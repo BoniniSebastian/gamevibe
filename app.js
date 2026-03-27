@@ -23,10 +23,10 @@ const DEFAULT_FIXED_BETS = [
 ];
 
 const DEFAULT_SIDEBETS = [
-  { id: "sidebet1", label: "Sidebet 1", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 },
-  { id: "sidebet2", label: "Sidebet 2", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 },
-  { id: "sidebet3", label: "Sidebet 3", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 },
-  { id: "sidebet4", label: "Sidebet 4", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 }
+  { id: "sidebet1", label: "", optionA: "", optionB: "", points: 100 },
+  { id: "sidebet2", label: "", optionA: "", optionB: "", points: 100 },
+  { id: "sidebet3", label: "", optionA: "", optionB: "", points: 100 },
+  { id: "sidebet4", label: "", optionA: "", optionB: "", points: 100 }
 ];
 
 const list = document.getElementById("list");
@@ -111,6 +111,18 @@ function ensureRoundShape(roundData) {
   return merged;
 }
 
+function getActiveSidebets(round = currentRound) {
+  const data = ensureRoundShape(round);
+  return (data.sidebets || []).filter(isSidebetActive);
+}
+
+function isSidebetActive(bet) {
+  const label = String(bet?.label || "").trim();
+  const optionA = String(bet?.optionA || "").trim();
+  const optionB = String(bet?.optionB || "").trim();
+  return !!(label && optionA && optionB);
+}
+
 function openCouponModal() {
   renderCouponQuestions();
   couponModal.classList.remove("hidden");
@@ -134,7 +146,7 @@ function openDetailModal(data) {
   detailStatus.textContent = data.lockedIn ? "LOCKED" : "ÖPPEN";
 
   const fixedBets = currentRound?.fixedBets || DEFAULT_FIXED_BETS;
-  const sidebets = currentRound?.sidebets || DEFAULT_SIDEBETS;
+  const sidebets = getActiveSidebets(currentRound);
 
   const blocks = [];
 
@@ -151,7 +163,7 @@ function openDetailModal(data) {
   sidebets.forEach((bet) => {
     blocks.push(`
       <div class="breakdownItem">
-        <div class="breakdownTitle">${escapeHtml(bet.label || "Sidebet")}</div>
+        <div class="breakdownTitle">${escapeHtml(bet.label)}</div>
         <div class="breakdownMeta">Ditt val: ${escapeHtml(readableAnswer(bet, data?.bets?.[bet.id]))}</div>
         <div class="breakdownMeta">Poängvärde: ${Number(bet.points || 0)} p</div>
       </div>
@@ -222,12 +234,12 @@ function renderAdminSidebets() {
   const round = ensureRoundShape(currentRound);
   sidebetsAdmin.innerHTML = "";
 
-  round.sidebets.forEach((bet) => {
+  round.sidebets.forEach((bet, index) => {
     const row = document.createElement("div");
     row.className = "adminItem";
     row.innerHTML = `
       <div class="adminItemHead">
-        <div class="adminItemTitle">${escapeHtml(bet.id.toUpperCase())}</div>
+        <div class="adminItemTitle">Sidebet ${index + 1}</div>
       </div>
       <label class="field">
         <span>Rubrik</span>
@@ -260,7 +272,7 @@ function renderCouponQuestions(existingBets = {}) {
     html.push(renderQuestionCard(bet, existingBets[bet.id]));
   });
 
-  round.sidebets.forEach((bet) => {
+  getActiveSidebets(round).forEach((bet) => {
     html.push(renderQuestionCard(bet, existingBets[bet.id]));
   });
 
@@ -497,9 +509,9 @@ saveAdminBtn.onclick = async () => {
 
     return {
       ...bet,
-      label: labelEl?.value?.trim() || bet.label,
-      optionA: aEl?.value?.trim() || "Alternativ A",
-      optionB: bEl?.value?.trim() || "Alternativ B",
+      label: labelEl?.value?.trim() || "",
+      optionA: aEl?.value?.trim() || "",
+      optionB: bEl?.value?.trim() || "",
       points: Number(pointsEl?.value || 0)
     };
   });
