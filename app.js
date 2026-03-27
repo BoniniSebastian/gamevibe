@@ -6,14 +6,17 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  getDocs,
-  where,
   updateDoc,
-  doc
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const list = document.getElementById("list");
 const addBtn = document.getElementById("addBtn");
+const matchEl = document.getElementById("match");
 
 const couponModal = document.getElementById("couponModal");
 const closeModalBtn = document.getElementById("closeModalBtn");
@@ -32,8 +35,22 @@ const detailScore = document.getElementById("detailScore");
 const detailStatus = document.getElementById("detailStatus");
 const detailBreakdown = document.getElementById("detailBreakdown");
 
+const adminBtn = document.getElementById("adminBtn");
+const adminModal = document.getElementById("adminModal");
+const closeAdminBtn = document.getElementById("closeAdminBtn");
+const adminBackdrop = document.querySelector(".adminBackdrop");
+const saveAdminBtn = document.getElementById("saveAdminBtn");
+const resetRoundBtn = document.getElementById("resetRoundBtn");
+
+const roundTitleInput = document.getElementById("roundTitleInput");
+const matchLinkInput = document.getElementById("matchLinkInput");
+const homeTeamInput = document.getElementById("homeTeamInput");
+const awayTeamInput = document.getElementById("awayTeamInput");
+
+const currentRoundRef = doc(db, "appState", "currentRound");
+
 let participantsCache = [];
-let editingParticipantId = null;
+let currentRound = null;
 
 function openCouponModal() {
   couponModal.classList.remove("hidden");
@@ -46,7 +63,6 @@ function closeCouponModal() {
 }
 
 function resetCouponForm() {
-  editingParticipantId = null;
   nameInput.value = "";
   bet1.value = "";
   bet2.value = "";
@@ -84,12 +100,32 @@ function closeDetailModal() {
   detailModal.classList.add("hidden");
 }
 
+function openAdminModal() {
+  syncAdminFormFromRound();
+  adminModal.classList.remove("hidden");
+}
+
+function closeAdminModal() {
+  adminModal.classList.add("hidden");
+}
+
+function syncAdminFormFromRound() {
+  roundTitleInput.value = currentRound?.title || "";
+  matchLinkInput.value = currentRound?.matchLink || "";
+  homeTeamInput.value = currentRound?.homeTeam || "";
+  awayTeamInput.value = currentRound?.awayTeam || "";
+}
+
 addBtn.onclick = openCouponModal;
 closeModalBtn.onclick = closeCouponModal;
 modalBackdrop.onclick = closeCouponModal;
 
 closeDetailBtn.onclick = closeDetailModal;
 detailBackdrop.onclick = closeDetailModal;
+
+adminBtn.onclick = openAdminModal;
+closeAdminBtn.onclick = closeAdminModal;
+adminBackdrop.onclick = closeAdminModal;
 
 nameInput.addEventListener("blur", tryLoadExistingCouponByName);
 
@@ -100,7 +136,6 @@ async function tryLoadExistingCouponByName() {
   const existing = findParticipantByName(rawName);
   if (!existing) return;
 
-  editingParticipantId = existing.id;
   bet1.value = existing?.bets?.firstGoalTeam || "";
   bet2.value = existing?.bets?.homeWin || "";
 }
@@ -147,6 +182,42 @@ saveCouponBtn.onclick = async () => {
   closeCouponModal();
 };
 
+saveAdminBtn.onclick = async () => {
+  const payload = {
+    title: roundTitleInput.value.trim(),
+    matchLink: matchLinkInput.value.trim(),
+    homeTeam: homeTeamInput.value.trim(),
+    awayTeam: awayTeamInput.value.trim(),
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(currentRoundRef, payload, { merge: true });
+  closeAdminModal();
+};
+
+resetRoundBtn.onclick = async () => {
+  const ok = confirm("Är du säker? Detta raderar omgången och alla kuponger.");
+  if (!ok) return;
+
+  const snap = await getDocs(collection(db, "participants"));
+  const deletions = [];
+
+  snap.forEach((docSnap) => {
+    deletions.push(deleteDoc(doc(db, "participants", docSnap.id)));
+  });
+
+  await Promise.all(deletions);
+  await setDoc(currentRoundRef, {
+    title: "",
+    matchLink: "",
+    homeTeam: "",
+    awayTeam: "",
+    updatedAt: serverTimestamp()
+  });
+
+  closeAdminModal();
+};
+
 const participantsQuery = query(
   collection(db, "participants"),
   orderBy("score", "desc")
@@ -164,7 +235,7 @@ onSnapshot(participantsQuery, (snapshot) => {
   });
 
   const leaderScore = participantsCache.length
-    ? Math.max(...participantsCache.map(i => i.score || 0), 0)
+    ? Math.max(...participantsCache.map((i) => i.score || 0), 0)
     : 0;
 
   participantsCache.forEach((data) => {
@@ -172,7 +243,7 @@ onSnapshot(participantsQuery, (snapshot) => {
     const pct = leaderScore > 0 ? (score / leaderScore) * 100 : 0;
 
     const div = document.createElement("button");
-    div.className = "card";
+    div.className = `card ${data.lockedIn ? "locked" : ""}`;
     div.type = "button";
 
     div.innerHTML = `
@@ -194,9 +265,27 @@ onSnapshot(participantsQuery, (snapshot) => {
   });
 });
 
+onSnapshot(currentRoundRef, (snap) => {
+  currentRound = snap.exists() ? snap.data() : null;
+  renderRoundMeta();
+  syncAdminFormFromRound();
+});
+
+function renderRoundMeta() {
+  if (!currentRound || !currentRound.title) {
+    matchEl.textContent = "Ingen omgång";
+    return;
+  }
+
+  const title = currentRound.title || "Omgång";
+  const home = currentRound.homeTeam || "Hemmalag";
+  const away = currentRound.awayTeam || "Bortalag";
+
+  matchEl.textContent = `${title} · ${home} vs ${away}`;
+}
+
 function findParticipantByName(name) {
   const normalized = normalizeName(name);
-
   return participantsCache.find((p) => normalizeName(p.name) === normalized) || null;
 }
 
@@ -205,8 +294,8 @@ function normalizeName(value) {
 }
 
 function labelFirstGoalTeam(value) {
-  if (value === "home") return "Hemmalag";
-  if (value === "away") return "Bortalag";
+  if (value === "home") return currentRound?.homeTeam || "Hemmalag";
+  if (value === "away") return currentRound?.awayTeam || "Bortalag";
   return "-";
 }
 
