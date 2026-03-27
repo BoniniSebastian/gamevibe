@@ -1,1 +1,37 @@
+body{
+  margin:0;
+  background:#050b12;
+  color:white;
+  font-family:sans-serif;
+  overflow:hidden;
+}
 
+.app{
+  padding:20px;
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+#addBtn{
+  margin-top:20px;
+  background:#19f6ff20;
+  border:1px solid #19f6ff;
+  color:white;
+  padding:10px;
+  border-radius:10px;
+}
+
+#list{
+  margin-top:20px;
+}
+
+.card{
+  padding:10px;
+  margin-bottom:10px;
+  background:#111;
+  border-radius:10px;
+}
