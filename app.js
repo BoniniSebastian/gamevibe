@@ -78,6 +78,7 @@ let participantsCache = [];
 let currentRound = null;
 let inlineQr = null;
 let bigQr = null;
+let autoResolveInFlight = false;
 
 function buildDefaultRound() {
   return {
@@ -222,7 +223,6 @@ function renderAdminFixedBets() {
   const round = ensureRoundShape(currentRound);
   fixedBetsAdmin.innerHTML = "";
 
-  // hjälplänk till matchsök
   const helper = document.createElement("div");
   helper.className = "adminItem";
   helper.innerHTML = `
@@ -351,6 +351,7 @@ function renderAdminSidebetResults() {
       }, { merge: true });
 
       await recalcScores();
+      openAdminModal();
     };
   });
 }
@@ -571,6 +572,127 @@ async function recalcScores() {
   await Promise.all(updates);
 }
 
+// ==========================
+// AUTO RÄTTNING V1
+// ==========================
+
+async function fetchMatchData(url) {
+  if (!url) return null;
+
+  try {
+    const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+    const res = await fetch(proxy);
+    const html = await res.text();
+    return parseMatch(html);
+  } catch (e) {
+    console.log("fetch error", e);
+    return null;
+  }
+}
+
+function parseMatch(html) {
+  const raw = String(html || "");
+  const text = raw.toLowerCase();
+
+  const result = {
+    firstGoalTeam: null,
+    firstPenaltyTeam: null,
+    penaltyInP1: null,
+    period2GoalsOU: null,
+    homeWin: null
+  };
+
+  const scoreHits = [...text.matchAll(/\b(\d+)\s*-\s*(\d+)\b/g)].map(m => ({
+    home: Number(m[1]),
+    away: Number(m[2]),
+    index: m.index ?? -1
+  }));
+
+  if (scoreHits.length) {
+    const firstNonZero = scoreHits.find(s => s.home + s.away > 0);
+    if (firstNonZero) {
+      if (firstNonZero.home > firstNonZero.away) result.firstGoalTeam = "home";
+      if (firstNonZero.away > firstNonZero.home) result.firstGoalTeam = "away";
+    }
+
+    const lastScore = scoreHits[scoreHits.length - 1];
+    if (lastScore.home > lastScore.away) result.homeWin = "yes";
+    if (lastScore.away > lastScore.home) result.homeWin = "no";
+  }
+
+  const penaltyIndex = text.indexOf("utvisning");
+  if (penaltyIndex >= 0) {
+    const before = text.slice(Math.max(0, penaltyIndex - 300), penaltyIndex);
+    const after = text.slice(penaltyIndex, penaltyIndex + 300);
+    const local = before + after;
+
+    result.penaltyInP1 = "yes";
+
+    if (
+      currentRound?.homeTeam &&
+      local.includes(String(currentRound.homeTeam).toLowerCase())
+    ) {
+      result.firstPenaltyTeam = "home";
+    } else if (
+      currentRound?.awayTeam &&
+      local.includes(String(currentRound.awayTeam).toLowerCase())
+    ) {
+      result.firstPenaltyTeam = "away";
+    }
+  } else {
+    result.penaltyInP1 = "no";
+    result.firstPenaltyTeam = "none";
+  }
+
+  const period2Section = extractPeriodSection(raw, 2);
+  if (period2Section) {
+    const goalsInP2 = (period2Section.match(/mål/gim) || []).length;
+    result.period2GoalsOU = goalsInP2 > 3 ? "over_3" : "under_3";
+  }
+
+  return result;
+}
+
+function extractPeriodSection(rawHtml, periodNumber) {
+  const text = String(rawHtml || "");
+  const rx = new RegExp(`period\\s*${periodNumber}[\\s\\S]{0,4000}`, "i");
+  const match = text.match(rx);
+  return match ? match[0] : "";
+}
+
+async function autoResolve() {
+  const round = ensureRoundShape(currentRound);
+  if (!round.matchLink || autoResolveInFlight) return;
+
+  autoResolveInFlight = true;
+
+  try {
+    const data = await fetchMatchData(round.matchLink);
+    if (!data) return;
+
+    const previous = round.correctAnswers || {};
+    const merged = {
+      ...previous
+    };
+
+    if (data.firstGoalTeam) merged.firstGoalTeam = data.firstGoalTeam;
+    if (data.firstPenaltyTeam) merged.firstPenaltyTeam = data.firstPenaltyTeam;
+    if (data.penaltyInP1) merged.penaltyInP1 = data.penaltyInP1;
+    if (data.period2GoalsOU) merged.period2GoalsOU = data.period2GoalsOU;
+    if (data.homeWin) merged.homeWin = data.homeWin;
+
+    await setDoc(currentRoundRef, {
+      correctAnswers: merged
+    }, { merge: true });
+
+    await recalcScores();
+  } catch (e) {
+    console.log("autoResolve error", e);
+  } finally {
+    autoResolveInFlight = false;
+  }
+}
+
 addBtn.onclick = openCouponModal;
 closeModalBtn.onclick = closeCouponModal;
 modalBackdrop.onclick = closeCouponModal;
@@ -759,6 +881,10 @@ onSnapshot(currentRoundRef, (snap) => {
   syncAdminFormFromRound();
   updateQrCodes();
 });
+
+setInterval(() => {
+  autoResolve();
+}, 10000);
 
 function renderRoundMeta() {
   if (!currentRound || !currentRound.title) {
