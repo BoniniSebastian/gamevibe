@@ -5,6 +5,7 @@
   --text:rgba(255,255,255,.92);
   --muted:rgba(255,255,255,.60);
   --neon:#19f6ff;
+  --danger:#ff6f91;
 }
 
 *{
@@ -84,6 +85,7 @@ h1{
   margin-top:4px;
   color:var(--muted);
   font-size:11px;
+  line-height:1.35;
 }
 
 .actions{
@@ -100,16 +102,27 @@ h1{
   color:var(--text);
 }
 
-.mainBtn{
-  margin-top:16px;
+.mainBtn,
+.ghostBtn{
   min-height:44px;
   padding:0 14px;
   border-radius:14px;
+  font-size:13px;
+  font-weight:700;
+}
+
+.mainBtn{
+  margin-top:16px;
   background:rgba(25,246,255,.12);
   border:1px solid rgba(25,246,255,.35);
   color:var(--text);
-  font-size:13px;
-  font-weight:700;
+  box-shadow:0 0 12px rgba(25,246,255,.10);
+}
+
+.ghostBtn{
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  color:var(--text);
 }
 
 #list{
@@ -125,6 +138,15 @@ h1{
   background:rgba(255,255,255,.04);
   border:1px solid var(--line);
   backdrop-filter:blur(14px);
+  text-align:left;
+}
+
+.card.locked{
+  border-color:rgba(25,246,255,.35);
+  box-shadow:
+    0 0 0 1px rgba(25,246,255,.08) inset,
+    0 0 18px rgba(25,246,255,.10),
+    0 0 34px rgba(25,246,255,.08);
 }
 
 .cardTop{
@@ -154,6 +176,10 @@ h1{
   background:rgba(25,246,255,.10);
 }
 
+.card.locked .badge{
+  box-shadow:0 0 10px rgba(25,246,255,.18);
+}
+
 .bar{
   margin-top:10px;
   height:5px;
@@ -180,7 +206,8 @@ h1{
 }
 
 .modalBackdrop,
-.detailBackdrop{
+.detailBackdrop,
+.adminBackdrop{
   position:absolute;
   inset:0;
   background:rgba(3,7,12,.70);
@@ -189,8 +216,10 @@ h1{
 
 .modalCard{
   position:absolute;
-  left:12px;
-  right:12px;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:420px;
   top:12px;
   bottom:12px;
   border-radius:24px;
@@ -199,6 +228,10 @@ h1{
   box-shadow:0 0 30px rgba(25,246,255,.08);
   display:flex;
   flex-direction:column;
+}
+
+.adminCard{
+  max-width:520px;
 }
 
 .modalHead{
@@ -211,7 +244,7 @@ h1{
 
 .modalHead h2{
   margin:2px 0 0;
-  font-size:18px;
+  font-size:16px;
 }
 
 .miniLabel{
@@ -226,7 +259,7 @@ h1{
   padding:8px 16px 16px;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
 }
 
 .modalFoot{
@@ -236,27 +269,35 @@ h1{
 .field{
   display:flex;
   flex-direction:column;
-  gap:7px;
+  gap:4px;
 }
 
 .field span{
-  font-size:11px;
-  color:var(--text);
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:.04em;
 }
 
 .field input,
 .field select{
   width:100%;
-  min-height:46px;
-  border-radius:14px;
+  min-height:40px;
+  border-radius:12px;
   border:1px solid var(--line);
-  background:rgba(255,255,255,.04);
-  padding:0 12px;
+  background:rgba(255,255,255,.03);
+  padding:0 10px;
+  font-size:13px;
   outline:none;
 }
 
 .field input::placeholder{
   color:rgba(255,255,255,.35);
+}
+
+.field select:focus,
+.field input:focus{
+  border-color:var(--neon);
+  box-shadow:0 0 8px rgba(25,246,255,.4);
 }
 
 .summaryCard{
@@ -308,4 +349,51 @@ h1{
   font-size:11px;
   color:var(--muted);
   line-height:1.35;
+}
+
+.adminSection{
+  padding:12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.035);
+  border:1px solid var(--line);
+}
+
+.adminSectionTitle{
+  font-size:12px;
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.dangerSection{
+  border-color:rgba(255,111,145,.18);
+}
+
+.adminDangerText{
+  font-size:11px;
+  line-height:1.4;
+  color:var(--muted);
+}
+
+.adminFoot{
+  display:flex;
+  gap:10px;
+  justify-content:space-between;
+}
+
+.adminFoot .ghostBtn,
+.adminFoot .mainBtn{
+  flex:1;
+  margin-top:0;
+}
+
+@media (max-width:420px){
+  .grid2{
+    grid-template-columns:1fr;
+  }
 }
