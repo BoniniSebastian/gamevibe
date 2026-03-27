@@ -2,36 +2,76 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#050b12">
   <title>Gamevibe</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+  <div class="blob"></div>
 
-<div class="blob"></div>
+  <div class="app">
+    <header class="top">
+      <div>
+        <h1>Gamevibe</h1>
+        <div id="match">Ingen omgång</div>
+      </div>
 
-<div class="app">
+      <div class="actions">
+        <button id="qrBtn" class="iconBtn">QR</button>
+        <button id="adminBtn" class="iconBtn">⚙</button>
+      </div>
+    </header>
 
-  <header class="top">
-    <div>
-      <h1>Gamevibe</h1>
-      <div id="match">Ingen omgång</div>
+    <button id="addBtn" class="mainBtn">+ Kupong</button>
+
+    <div id="list"></div>
+  </div>
+
+  <!-- Kupong popup -->
+  <div id="couponModal" class="modal hidden">
+    <div class="modalBackdrop"></div>
+
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <div class="miniLabel">KUPONG</div>
+          <h2>Din kupong</h2>
+        </div>
+        <button id="closeModalBtn" class="iconBtn">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <label class="field">
+          <span>Namn</span>
+          <input id="nameInput" type="text" placeholder="Skriv ditt namn">
+        </label>
+
+        <label class="field">
+          <span>Lag som gör första målet · 100p</span>
+          <select id="bet1">
+            <option value="">Välj</option>
+            <option value="home">Hemmalag</option>
+            <option value="away">Bortalag</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Vinner hemmalaget matchen · 100p</span>
+          <select id="bet2">
+            <option value="">Välj</option>
+            <option value="yes">Ja</option>
+            <option value="no">Nej</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="modalFoot">
+        <button id="saveCouponBtn" class="mainBtn">Spara / Lock in</button>
+      </div>
     </div>
+  </div>
 
-    <div class="actions">
-      <button id="qrBtn">QR</button>
-      <button id="adminBtn">⚙</button>
-    </div>
-  </header>
-
-  <button id="addBtn">+ Kupong</button>
-
-  <div id="list"></div>
-
-</div>
-
-<script type="module" src="app.js"></script>
-
+  <script type="module" src="app.js"></script>
 </body>
 </html>
