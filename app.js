@@ -5,7 +5,11 @@ import {
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  getDocs,
+  where,
+  updateDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const list = document.getElementById("list");
@@ -28,15 +32,25 @@ const detailScore = document.getElementById("detailScore");
 const detailStatus = document.getElementById("detailStatus");
 const detailBreakdown = document.getElementById("detailBreakdown");
 
+let participantsCache = [];
+let editingParticipantId = null;
+
 function openCouponModal() {
   couponModal.classList.remove("hidden");
+  nameInput.focus();
 }
 
 function closeCouponModal() {
   couponModal.classList.add("hidden");
+  resetCouponForm();
+}
+
+function resetCouponForm() {
+  editingParticipantId = null;
   nameInput.value = "";
   bet1.value = "";
   bet2.value = "";
+  nameInput.disabled = false;
 }
 
 function openDetailModal(data) {
@@ -54,6 +68,13 @@ function openDetailModal(data) {
       <div class="breakdownTitle">Vinner hemmalaget matchen</div>
       <div class="breakdownMeta">Ditt val: ${labelHomeWin(data?.bets?.homeWin)}</div>
     </div>
+
+    <div class="breakdownItem">
+      <div class="breakdownTitle">Kupong</div>
+      <div class="breakdownMeta">
+        Tryck på “+ Kupong” och skriv samma namn om du vill öppna och uppdatera dina val.
+      </div>
+    </div>
   `;
 
   detailModal.classList.remove("hidden");
@@ -70,8 +91,22 @@ modalBackdrop.onclick = closeCouponModal;
 closeDetailBtn.onclick = closeDetailModal;
 detailBackdrop.onclick = closeDetailModal;
 
+nameInput.addEventListener("blur", tryLoadExistingCouponByName);
+
+async function tryLoadExistingCouponByName() {
+  const rawName = nameInput.value.trim();
+  if (!rawName) return;
+
+  const existing = findParticipantByName(rawName);
+  if (!existing) return;
+
+  editingParticipantId = existing.id;
+  bet1.value = existing?.bets?.firstGoalTeam || "";
+  bet2.value = existing?.bets?.homeWin || "";
+}
+
 saveCouponBtn.onclick = async () => {
-  const name = nameInput.value.trim();
+  const name = normalizeName(nameInput.value);
 
   if (!name) {
     alert("Skriv ditt namn.");
@@ -83,16 +118,31 @@ saveCouponBtn.onclick = async () => {
     return;
   }
 
-  await addDoc(collection(db, "participants"), {
-    name,
-    lockedIn: true,
-    score: 0,
-    bets: {
-      firstGoalTeam: bet1.value,
-      homeWin: bet2.value
-    },
-    createdAt: serverTimestamp()
-  });
+  const existing = findParticipantByName(name);
+
+  if (existing) {
+    const ref = doc(db, "participants", existing.id);
+
+    await updateDoc(ref, {
+      name,
+      lockedIn: true,
+      bets: {
+        firstGoalTeam: bet1.value,
+        homeWin: bet2.value
+      }
+    });
+  } else {
+    await addDoc(collection(db, "participants"), {
+      name,
+      lockedIn: true,
+      score: 0,
+      bets: {
+        firstGoalTeam: bet1.value,
+        homeWin: bet2.value
+      },
+      createdAt: serverTimestamp()
+    });
+  }
 
   closeCouponModal();
 };
@@ -104,18 +154,20 @@ const participantsQuery = query(
 
 onSnapshot(participantsQuery, (snapshot) => {
   list.innerHTML = "";
+  participantsCache = [];
 
-  const items = [];
   snapshot.forEach((docSnap) => {
-    items.push({
+    participantsCache.push({
       id: docSnap.id,
       ...docSnap.data()
     });
   });
 
-  const leaderScore = items.length ? Math.max(...items.map(i => i.score || 0), 0) : 0;
+  const leaderScore = participantsCache.length
+    ? Math.max(...participantsCache.map(i => i.score || 0), 0)
+    : 0;
 
-  items.forEach((data) => {
+  participantsCache.forEach((data) => {
     const score = data.score || 0;
     const pct = leaderScore > 0 ? (score / leaderScore) * 100 : 0;
 
@@ -141,6 +193,16 @@ onSnapshot(participantsQuery, (snapshot) => {
     list.appendChild(div);
   });
 });
+
+function findParticipantByName(name) {
+  const normalized = normalizeName(name);
+
+  return participantsCache.find((p) => normalizeName(p.name) === normalized) || null;
+}
+
+function normalizeName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
 
 function labelFirstGoalTeam(value) {
   if (value === "home") return "Hemmalag";
