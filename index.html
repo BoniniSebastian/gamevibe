@@ -72,6 +72,36 @@
     </div>
   </div>
 
+  <!-- Detalj popup -->
+  <div id="detailModal" class="modal hidden">
+    <div class="detailBackdrop"></div>
+
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <div class="miniLabel">DETALJER</div>
+          <h2 id="detailName">Kupong</h2>
+        </div>
+        <button id="closeDetailBtn" class="iconBtn">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="summaryCard">
+          <div class="summaryItem">
+            <div class="summaryLabel">Poäng</div>
+            <div id="detailScore" class="summaryValue">0 p</div>
+          </div>
+          <div class="summaryItem">
+            <div class="summaryLabel">Status</div>
+            <div id="detailStatus" class="summaryValue">-</div>
+          </div>
+        </div>
+
+        <div id="detailBreakdown" class="detailBreakdown"></div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>
