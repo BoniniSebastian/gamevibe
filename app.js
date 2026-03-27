@@ -9,10 +9,25 @@ import {
   updateDoc,
   doc,
   setDoc,
-  getDoc,
   getDocs,
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const DEFAULT_FIXED_BETS = [
+  { id: "firstGoalTeam", label: "Lag som gör första målet", type: "team_first_goal", points: 100 },
+  { id: "homePlayerFirstGoal", label: "Vilken spelare i hemmalaget gör första målet", type: "home_player_first_goal", points: 100 },
+  { id: "firstPenaltyTeam", label: "Vilket lag tar första utvisningen", type: "first_penalty_team", points: 100 },
+  { id: "period2GoalsOU", label: "Totalt antal mål i period 2", type: "period2_goals_ou", points: 100 },
+  { id: "penaltyInP1", label: "Blir det en utvisning i period 1", type: "penalty_p1_yes_no", points: 100 },
+  { id: "homeWin", label: "Vinner hemmalaget matchen", type: "home_win_yes_no", points: 100 }
+];
+
+const DEFAULT_SIDEBETS = [
+  { id: "sidebet1", label: "Sidebet 1", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 },
+  { id: "sidebet2", label: "Sidebet 2", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 },
+  { id: "sidebet3", label: "Sidebet 3", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 },
+  { id: "sidebet4", label: "Sidebet 4", optionA: "Alternativ A", optionB: "Alternativ B", points: 100 }
+];
 
 const list = document.getElementById("list");
 const addBtn = document.getElementById("addBtn");
@@ -21,10 +36,8 @@ const matchEl = document.getElementById("match");
 const couponModal = document.getElementById("couponModal");
 const closeModalBtn = document.getElementById("closeModalBtn");
 const modalBackdrop = document.querySelector(".modalBackdrop");
-
 const nameInput = document.getElementById("nameInput");
-const bet1 = document.getElementById("bet1");
-const bet2 = document.getElementById("bet2");
+const couponQuestions = document.getElementById("couponQuestions");
 const saveCouponBtn = document.getElementById("saveCouponBtn");
 
 const detailModal = document.getElementById("detailModal");
@@ -46,13 +59,60 @@ const roundTitleInput = document.getElementById("roundTitleInput");
 const matchLinkInput = document.getElementById("matchLinkInput");
 const homeTeamInput = document.getElementById("homeTeamInput");
 const awayTeamInput = document.getElementById("awayTeamInput");
+const rosterInput = document.getElementById("rosterInput");
+const fixedBetsAdmin = document.getElementById("fixedBetsAdmin");
+const sidebetsAdmin = document.getElementById("sidebetsAdmin");
+
+const qrBtn = document.getElementById("qrBtn");
+const qrModal = document.getElementById("qrModal");
+const closeQrBtn = document.getElementById("closeQrBtn");
+const qrBackdrop = document.querySelector(".qrBackdrop");
+const qrCanvasInline = document.getElementById("qrCanvasInline");
+const qrCanvasBig = document.getElementById("qrCanvasBig");
+const shareUrlText = document.getElementById("shareUrlText");
+const qrUrlText = document.getElementById("qrUrlText");
 
 const currentRoundRef = doc(db, "appState", "currentRound");
 
 let participantsCache = [];
 let currentRound = null;
+let inlineQr = null;
+let bigQr = null;
+
+function buildDefaultRound() {
+  return {
+    title: "",
+    matchLink: "",
+    homeTeam: "",
+    awayTeam: "",
+    rosterRaw: "",
+    rosterPlayers: [],
+    fixedBets: structuredClone(DEFAULT_FIXED_BETS),
+    sidebets: structuredClone(DEFAULT_SIDEBETS)
+  };
+}
+
+function ensureRoundShape(roundData) {
+  const base = buildDefaultRound();
+  const merged = {
+    ...base,
+    ...(roundData || {})
+  };
+
+  merged.fixedBets = Array.isArray(roundData?.fixedBets) && roundData.fixedBets.length
+    ? roundData.fixedBets
+    : structuredClone(DEFAULT_FIXED_BETS);
+
+  merged.sidebets = Array.isArray(roundData?.sidebets) && roundData.sidebets.length
+    ? roundData.sidebets
+    : structuredClone(DEFAULT_SIDEBETS);
+
+  if (!Array.isArray(merged.rosterPlayers)) merged.rosterPlayers = [];
+  return merged;
+}
 
 function openCouponModal() {
+  renderCouponQuestions();
   couponModal.classList.remove("hidden");
   nameInput.focus();
 }
@@ -64,9 +124,8 @@ function closeCouponModal() {
 
 function resetCouponForm() {
   nameInput.value = "";
-  bet1.value = "";
-  bet2.value = "";
   nameInput.disabled = false;
+  renderCouponQuestions();
 }
 
 function openDetailModal(data) {
@@ -74,25 +133,32 @@ function openDetailModal(data) {
   detailScore.textContent = `${data.score || 0} p`;
   detailStatus.textContent = data.lockedIn ? "LOCKED" : "ÖPPEN";
 
-  detailBreakdown.innerHTML = `
-    <div class="breakdownItem">
-      <div class="breakdownTitle">Lag som gör första målet</div>
-      <div class="breakdownMeta">Ditt val: ${labelFirstGoalTeam(data?.bets?.firstGoalTeam)}</div>
-    </div>
+  const fixedBets = currentRound?.fixedBets || DEFAULT_FIXED_BETS;
+  const sidebets = currentRound?.sidebets || DEFAULT_SIDEBETS;
 
-    <div class="breakdownItem">
-      <div class="breakdownTitle">Vinner hemmalaget matchen</div>
-      <div class="breakdownMeta">Ditt val: ${labelHomeWin(data?.bets?.homeWin)}</div>
-    </div>
+  const blocks = [];
 
-    <div class="breakdownItem">
-      <div class="breakdownTitle">Kupong</div>
-      <div class="breakdownMeta">
-        Tryck på “+ Kupong” och skriv samma namn om du vill öppna och uppdatera dina val.
+  fixedBets.forEach((bet) => {
+    blocks.push(`
+      <div class="breakdownItem">
+        <div class="breakdownTitle">${escapeHtml(bet.label)}</div>
+        <div class="breakdownMeta">Ditt val: ${escapeHtml(readableAnswer(bet, data?.bets?.[bet.id]))}</div>
+        <div class="breakdownMeta">Poängvärde: ${Number(bet.points || 0)} p</div>
       </div>
-    </div>
-  `;
+    `);
+  });
 
+  sidebets.forEach((bet) => {
+    blocks.push(`
+      <div class="breakdownItem">
+        <div class="breakdownTitle">${escapeHtml(bet.label || "Sidebet")}</div>
+        <div class="breakdownMeta">Ditt val: ${escapeHtml(readableAnswer(bet, data?.bets?.[bet.id]))}</div>
+        <div class="breakdownMeta">Poängvärde: ${Number(bet.points || 0)} p</div>
+      </div>
+    `);
+  });
+
+  detailBreakdown.innerHTML = blocks.join("");
   detailModal.classList.remove("hidden");
 }
 
@@ -102,6 +168,8 @@ function closeDetailModal() {
 
 function openAdminModal() {
   syncAdminFormFromRound();
+  renderAdminFixedBets();
+  renderAdminSidebets();
   adminModal.classList.remove("hidden");
 }
 
@@ -109,11 +177,238 @@ function closeAdminModal() {
   adminModal.classList.add("hidden");
 }
 
+function openQrModal() {
+  updateQrCodes();
+  qrModal.classList.remove("hidden");
+}
+
+function closeQrModal() {
+  qrModal.classList.add("hidden");
+}
+
 function syncAdminFormFromRound() {
-  roundTitleInput.value = currentRound?.title || "";
-  matchLinkInput.value = currentRound?.matchLink || "";
-  homeTeamInput.value = currentRound?.homeTeam || "";
-  awayTeamInput.value = currentRound?.awayTeam || "";
+  const round = ensureRoundShape(currentRound);
+  roundTitleInput.value = round.title || "";
+  matchLinkInput.value = round.matchLink || "";
+  homeTeamInput.value = round.homeTeam || "";
+  awayTeamInput.value = round.awayTeam || "";
+  rosterInput.value = round.rosterRaw || "";
+}
+
+function renderAdminFixedBets() {
+  const round = ensureRoundShape(currentRound);
+  fixedBetsAdmin.innerHTML = "";
+
+  round.fixedBets.forEach((bet) => {
+    const row = document.createElement("div");
+    row.className = "adminItem";
+    row.innerHTML = `
+      <div class="adminItemHead">
+        <div class="adminItemTitle">${escapeHtml(bet.label)}</div>
+      </div>
+      <div class="adminMiniGrid">
+        <label class="field">
+          <span>Poäng</span>
+          <input type="number" min="0" data-fixed-points="${escapeHtml(bet.id)}" value="${Number(bet.points || 0)}">
+        </label>
+        <div></div>
+      </div>
+    `;
+    fixedBetsAdmin.appendChild(row);
+  });
+}
+
+function renderAdminSidebets() {
+  const round = ensureRoundShape(currentRound);
+  sidebetsAdmin.innerHTML = "";
+
+  round.sidebets.forEach((bet) => {
+    const row = document.createElement("div");
+    row.className = "adminItem";
+    row.innerHTML = `
+      <div class="adminItemHead">
+        <div class="adminItemTitle">${escapeHtml(bet.id.toUpperCase())}</div>
+      </div>
+      <label class="field">
+        <span>Rubrik</span>
+        <input type="text" data-side-label="${escapeHtml(bet.id)}" value="${escapeHtmlAttr(bet.label || "")}">
+      </label>
+      <div class="sidebetGrid">
+        <label class="field">
+          <span>Alternativ A</span>
+          <input type="text" data-side-a="${escapeHtml(bet.id)}" value="${escapeHtmlAttr(bet.optionA || "")}">
+        </label>
+        <label class="field">
+          <span>Alternativ B</span>
+          <input type="text" data-side-b="${escapeHtml(bet.id)}" value="${escapeHtmlAttr(bet.optionB || "")}">
+        </label>
+        <label class="field">
+          <span>Poäng</span>
+          <input type="number" min="0" data-side-points="${escapeHtml(bet.id)}" value="${Number(bet.points || 0)}">
+        </label>
+      </div>
+    `;
+    sidebetsAdmin.appendChild(row);
+  });
+}
+
+function renderCouponQuestions(existingBets = {}) {
+  const round = ensureRoundShape(currentRound);
+  const html = [];
+
+  round.fixedBets.forEach((bet) => {
+    html.push(renderQuestionCard(bet, existingBets[bet.id]));
+  });
+
+  round.sidebets.forEach((bet) => {
+    html.push(renderQuestionCard(bet, existingBets[bet.id]));
+  });
+
+  couponQuestions.innerHTML = html.join("");
+}
+
+function renderQuestionCard(bet, value) {
+  const points = Number(bet.points || 0);
+  const options = getOptionsForBet(bet);
+
+  return `
+    <div class="questionCard">
+      <div class="questionTop">
+        <div class="questionLabel">${escapeHtml(bet.label)}</div>
+        <div class="pointsBadge">${points} p</div>
+      </div>
+      <label class="field">
+        <span>Välj</span>
+        <select data-question-id="${escapeHtml(bet.id)}">
+          <option value="">Välj</option>
+          ${options.map(opt => `
+            <option value="${escapeHtml(opt.value)}" ${value === opt.value ? "selected" : ""}>
+              ${escapeHtml(opt.label)}
+            </option>
+          `).join("")}
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function getOptionsForBet(bet) {
+  switch (bet.type) {
+    case "team_first_goal":
+      return [
+        { value: "home", label: currentRound?.homeTeam || "Hemmalag" },
+        { value: "away", label: currentRound?.awayTeam || "Bortalag" }
+      ];
+
+    case "home_player_first_goal":
+      return (currentRound?.rosterPlayers || []).map((name) => ({
+        value: name,
+        label: name
+      }));
+
+    case "first_penalty_team":
+      return [
+        { value: "home", label: currentRound?.homeTeam || "Hemmalag" },
+        { value: "away", label: currentRound?.awayTeam || "Bortalag" },
+        { value: "none", label: "Ingen utvisning" }
+      ];
+
+    case "period2_goals_ou":
+      return [
+        { value: "under_3", label: "Under 3 mål" },
+        { value: "over_3", label: "Över 3 mål" }
+      ];
+
+    case "penalty_p1_yes_no":
+      return [
+        { value: "yes", label: "Ja" },
+        { value: "no", label: "Nej" }
+      ];
+
+    case "home_win_yes_no":
+      return [
+        { value: "yes", label: "Ja" },
+        { value: "no", label: "Nej" }
+      ];
+
+    default:
+      return [
+        { value: "A", label: bet.optionA || "Alternativ A" },
+        { value: "B", label: bet.optionB || "Alternativ B" }
+      ];
+  }
+}
+
+function collectCouponAnswers() {
+  const answers = {};
+  const selects = couponQuestions.querySelectorAll("select[data-question-id]");
+
+  for (const select of selects) {
+    const key = select.dataset.questionId;
+    answers[key] = select.value;
+  }
+
+  return answers;
+}
+
+function validateCouponAnswers() {
+  const selects = couponQuestions.querySelectorAll("select[data-question-id]");
+  for (const select of selects) {
+    if (!select.value) return false;
+  }
+  return true;
+}
+
+function parseRoster(rawText) {
+  const lines = String(rawText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const players = [];
+
+  for (const line of lines) {
+    if (/^målvakt$/i.test(line)) continue;
+    if (/^\d+$/.test(line)) continue;
+
+    const cleaned = line.replace(/^\d+\s+/, "").trim();
+    if (!cleaned) continue;
+    if (/^målvakt$/i.test(cleaned)) continue;
+
+    players.push(cleaned);
+  }
+
+  return [...new Set(players)];
+}
+
+function updateQrCodes() {
+  const url = window.location.href;
+  shareUrlText.textContent = url;
+  qrUrlText.textContent = url;
+
+  if (!inlineQr) {
+    inlineQr = new QRious({
+      element: qrCanvasInline,
+      value: url,
+      size: 76,
+      background: "white",
+      foreground: "black"
+    });
+  } else {
+    inlineQr.value = url;
+  }
+
+  if (!bigQr) {
+    bigQr = new QRious({
+      element: qrCanvasBig,
+      value: url,
+      size: 220,
+      background: "white",
+      foreground: "black"
+    });
+  } else {
+    bigQr.value = url;
+  }
 }
 
 addBtn.onclick = openCouponModal;
@@ -127,6 +422,10 @@ adminBtn.onclick = openAdminModal;
 closeAdminBtn.onclick = closeAdminModal;
 adminBackdrop.onclick = closeAdminModal;
 
+qrBtn.onclick = openQrModal;
+closeQrBtn.onclick = closeQrModal;
+qrBackdrop.onclick = closeQrModal;
+
 nameInput.addEventListener("blur", tryLoadExistingCouponByName);
 
 async function tryLoadExistingCouponByName() {
@@ -134,10 +433,12 @@ async function tryLoadExistingCouponByName() {
   if (!rawName) return;
 
   const existing = findParticipantByName(rawName);
-  if (!existing) return;
+  if (!existing) {
+    renderCouponQuestions();
+    return;
+  }
 
-  bet1.value = existing?.bets?.firstGoalTeam || "";
-  bet2.value = existing?.bets?.homeWin || "";
+  renderCouponQuestions(existing.bets || {});
 }
 
 saveCouponBtn.onclick = async () => {
@@ -148,11 +449,12 @@ saveCouponBtn.onclick = async () => {
     return;
   }
 
-  if (!bet1.value || !bet2.value) {
-    alert("Fyll i båda frågorna.");
+  if (!validateCouponAnswers()) {
+    alert("Fyll i hela kupongen.");
     return;
   }
 
+  const answers = collectCouponAnswers();
   const existing = findParticipantByName(name);
 
   if (existing) {
@@ -161,20 +463,14 @@ saveCouponBtn.onclick = async () => {
     await updateDoc(ref, {
       name,
       lockedIn: true,
-      bets: {
-        firstGoalTeam: bet1.value,
-        homeWin: bet2.value
-      }
+      bets: answers
     });
   } else {
     await addDoc(collection(db, "participants"), {
       name,
       lockedIn: true,
       score: 0,
-      bets: {
-        firstGoalTeam: bet1.value,
-        homeWin: bet2.value
-      },
+      bets: answers,
       createdAt: serverTimestamp()
     });
   }
@@ -183,11 +479,43 @@ saveCouponBtn.onclick = async () => {
 };
 
 saveAdminBtn.onclick = async () => {
+  const current = ensureRoundShape(currentRound);
+
+  const fixedBets = current.fixedBets.map((bet) => {
+    const input = fixedBetsAdmin.querySelector(`[data-fixed-points="${bet.id}"]`);
+    return {
+      ...bet,
+      points: Number(input?.value || 0)
+    };
+  });
+
+  const sidebets = current.sidebets.map((bet) => {
+    const labelEl = sidebetsAdmin.querySelector(`[data-side-label="${bet.id}"]`);
+    const aEl = sidebetsAdmin.querySelector(`[data-side-a="${bet.id}"]`);
+    const bEl = sidebetsAdmin.querySelector(`[data-side-b="${bet.id}"]`);
+    const pointsEl = sidebetsAdmin.querySelector(`[data-side-points="${bet.id}"]`);
+
+    return {
+      ...bet,
+      label: labelEl?.value?.trim() || bet.label,
+      optionA: aEl?.value?.trim() || "Alternativ A",
+      optionB: bEl?.value?.trim() || "Alternativ B",
+      points: Number(pointsEl?.value || 0)
+    };
+  });
+
+  const rosterRaw = rosterInput.value.trim();
+  const rosterPlayers = parseRoster(rosterRaw);
+
   const payload = {
     title: roundTitleInput.value.trim(),
     matchLink: matchLinkInput.value.trim(),
     homeTeam: homeTeamInput.value.trim(),
     awayTeam: awayTeamInput.value.trim(),
+    rosterRaw,
+    rosterPlayers,
+    fixedBets,
+    sidebets,
     updatedAt: serverTimestamp()
   };
 
@@ -208,10 +536,7 @@ resetRoundBtn.onclick = async () => {
 
   await Promise.all(deletions);
   await setDoc(currentRoundRef, {
-    title: "",
-    matchLink: "",
-    homeTeam: "",
-    awayTeam: "",
+    ...buildDefaultRound(),
     updatedAt: serverTimestamp()
   });
 
@@ -260,15 +585,15 @@ onSnapshot(participantsQuery, (snapshot) => {
     `;
 
     div.onclick = () => openDetailModal(data);
-
     list.appendChild(div);
   });
 });
 
 onSnapshot(currentRoundRef, (snap) => {
-  currentRound = snap.exists() ? snap.data() : null;
+  currentRound = ensureRoundShape(snap.exists() ? snap.data() : buildDefaultRound());
   renderRoundMeta();
   syncAdminFormFromRound();
+  updateQrCodes();
 });
 
 function renderRoundMeta() {
@@ -280,7 +605,6 @@ function renderRoundMeta() {
   const title = currentRound.title || "Omgång";
   const home = currentRound.homeTeam || "Hemmalag";
   const away = currentRound.awayTeam || "Bortalag";
-
   matchEl.textContent = `${title} · ${home} vs ${away}`;
 }
 
@@ -293,16 +617,36 @@ function normalizeName(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
-function labelFirstGoalTeam(value) {
-  if (value === "home") return currentRound?.homeTeam || "Hemmalag";
-  if (value === "away") return currentRound?.awayTeam || "Bortalag";
-  return "-";
-}
+function readableAnswer(bet, value) {
+  if (!value) return "-";
 
-function labelHomeWin(value) {
-  if (value === "yes") return "Ja";
-  if (value === "no") return "Nej";
-  return "-";
+  switch (bet.type) {
+    case "team_first_goal":
+    case "first_penalty_team":
+      if (value === "home") return currentRound?.homeTeam || "Hemmalag";
+      if (value === "away") return currentRound?.awayTeam || "Bortalag";
+      if (value === "none") return "Ingen utvisning";
+      return value;
+
+    case "period2_goals_ou":
+      if (value === "under_3") return "Under 3 mål";
+      if (value === "over_3") return "Över 3 mål";
+      return value;
+
+    case "penalty_p1_yes_no":
+    case "home_win_yes_no":
+      if (value === "yes") return "Ja";
+      if (value === "no") return "Nej";
+      return value;
+
+    case "home_player_first_goal":
+      return value;
+
+    default:
+      if (value === "A") return bet.optionA || "Alternativ A";
+      if (value === "B") return bet.optionB || "Alternativ B";
+      return value;
+  }
 }
 
 function escapeHtml(value) {
@@ -312,4 +656,12 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function escapeHtmlAttr(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
