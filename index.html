@@ -23,6 +23,14 @@
       </div>
     </header>
 
+    <section class="qrInlineCard">
+      <div>
+        <div class="qrInlineTitle">Scanna för att komma in</div>
+        <div class="qrInlineSub" id="shareUrlText"></div>
+      </div>
+      <canvas id="qrCanvasInline" width="76" height="76"></canvas>
+    </section>
+
     <button id="addBtn" class="mainBtn" type="button">+ Kupong</button>
 
     <div id="list"></div>
@@ -47,23 +55,7 @@
           <input id="nameInput" type="text" placeholder="Skriv ditt namn">
         </label>
 
-        <label class="field">
-          <span>Lag som gör första målet · 100p</span>
-          <select id="bet1">
-            <option value="">Välj</option>
-            <option value="home">Hemmalag</option>
-            <option value="away">Bortalag</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>Vinner hemmalaget matchen · 100p</span>
-          <select id="bet2">
-            <option value="">Välj</option>
-            <option value="yes">Ja</option>
-            <option value="no">Nej</option>
-          </select>
-        </label>
+        <div id="couponQuestions" class="questionList"></div>
       </div>
 
       <div class="modalFoot">
@@ -142,6 +134,24 @@
           </div>
         </div>
 
+        <div class="adminSection">
+          <div class="adminSectionTitle">Trupp hemmalag</div>
+          <label class="field">
+            <span>Klistra in trupptext</span>
+            <textarea id="rosterInput" rows="8" placeholder="Klistra in hemmalagets trupp här"></textarea>
+          </label>
+        </div>
+
+        <div class="adminSection">
+          <div class="adminSectionTitle">Fasta bets</div>
+          <div id="fixedBetsAdmin" class="adminList"></div>
+        </div>
+
+        <div class="adminSection">
+          <div class="adminSectionTitle">Sidebets</div>
+          <div id="sidebetsAdmin" class="adminList"></div>
+        </div>
+
         <div class="adminSection dangerSection">
           <div class="adminSectionTitle">Farligt</div>
           <div class="adminDangerText">
@@ -157,6 +167,27 @@
     </div>
   </div>
 
+  <!-- QR popup -->
+  <div id="qrModal" class="modal hidden">
+    <div class="qrBackdrop"></div>
+
+    <div class="modalCard qrCard">
+      <div class="modalHead">
+        <div>
+          <div class="miniLabel">QR</div>
+          <h2>Scanna för att gå in</h2>
+        </div>
+        <button id="closeQrBtn" class="iconBtn" type="button">✕</button>
+      </div>
+
+      <div class="modalBody qrModalBody">
+        <canvas id="qrCanvasBig" width="220" height="220"></canvas>
+        <div id="qrUrlText" class="qrUrlText"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
