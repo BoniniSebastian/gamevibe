@@ -2,192 +2,71 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#050b12">
-  <title>Gamevibe</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LivelyDashSB</title>
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="blob"></div>
 
-  <div class="app">
-    <header class="top">
-      <div>
-        <h1>Gamevibe</h1>
-        <div id="match">Ingen omgång</div>
-      </div>
+<!-- 🌊 BAKGRUND -->
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
 
-      <div class="actions">
-        <button id="qrBtn" class="iconBtn" type="button">QR</button>
-        <button id="adminBtn" class="iconBtn" type="button">⚙</button>
-      </div>
-    </header>
+<!-- 📱 HUD -->
+<div class="hud">
 
-    <section class="qrInlineCard">
-      <div>
-        <div class="qrInlineTitle">Scanna för att komma in</div>
-        <div class="qrInlineSub" id="shareUrlText"></div>
-      </div>
-      <canvas id="qrCanvasInline" width="76" height="76"></canvas>
-    </section>
-
-    <button id="addBtn" class="mainBtn" type="button">+ Kupong</button>
-
-    <div id="list"></div>
-  </div>
-
-  <!-- Kupong popup -->
-  <div id="couponModal" class="modal hidden">
-    <div class="modalBackdrop"></div>
-
-    <div class="modalCard">
-      <div class="modalHead">
-        <div>
-          <div class="miniLabel">KUPONG</div>
-          <h2>Din kupong</h2>
-        </div>
-        <button id="closeModalBtn" class="iconBtn" type="button">✕</button>
-      </div>
-
-      <div class="modalBody">
-        <label class="field">
-          <span>Namn</span>
-          <input id="nameInput" type="text" placeholder="Skriv ditt namn">
-        </label>
-
-        <div id="couponQuestions" class="questionList"></div>
-      </div>
-
-      <div class="modalFoot">
-        <button id="saveCouponBtn" class="mainBtn" type="button">Spara / Lock in</button>
-      </div>
+  <div class="weather">
+    <div class="sun"></div>
+    <div>
+      <div class="temp">10°</div>
+      <div class="meta">Klart</div>
     </div>
   </div>
 
-  <!-- Detalj popup -->
-  <div id="detailModal" class="modal hidden">
-    <div class="detailBackdrop"></div>
+  <div class="clock" id="clock">11:14</div>
+  <div class="date" id="date">Onsdag - 1 april</div>
 
-    <div class="modalCard">
-      <div class="modalHead">
-        <div>
-          <div class="miniLabel">DETALJER</div>
-          <h2 id="detailName">Kupong</h2>
-        </div>
-        <button id="closeDetailBtn" class="iconBtn" type="button">✕</button>
-      </div>
-
-      <div class="modalBody">
-        <div class="summaryCard">
-          <div class="summaryItem">
-            <div class="summaryLabel">Poäng</div>
-            <div id="detailScore" class="summaryValue">0 p</div>
-          </div>
-          <div class="summaryItem">
-            <div class="summaryLabel">Status</div>
-            <div id="detailStatus" class="summaryValue">-</div>
-          </div>
-        </div>
-
-        <div id="detailBreakdown" class="detailBreakdown"></div>
-      </div>
+  <div class="profile">
+    <div class="profile-circle" id="profileCircle">SB</div>
+    <div class="profile-switch">
+      <span id="sbBtn" class="active">SB</span>
+      <span>•</span>
+      <span id="jaBtn">JA</span>
     </div>
   </div>
 
-  <!-- Admin popup -->
-  <div id="adminModal" class="modal hidden">
-    <div class="adminBackdrop"></div>
+</div>
 
-    <div class="modalCard adminCard">
-      <div class="modalHead">
-        <div>
-          <div class="miniLabel">ADMIN</div>
-          <h2>Skapa omgång</h2>
-        </div>
-        <button id="closeAdminBtn" class="iconBtn" type="button">✕</button>
-      </div>
+<!-- 🧩 DASHBOARD -->
+<div class="dashboard">
 
-      <div class="modalBody">
-        <div class="adminSection">
-          <div class="adminSectionTitle">Match</div>
+  <div class="card glass large">Fritext</div>
 
-          <label class="field">
-            <span>Omgångsnamn</span>
-            <input id="roundTitleInput" type="text" placeholder="T.ex. Fredagsmatchen">
-          </label>
+  <div class="card glass small">Listor</div>
 
-          <label class="field">
-            <span>Matchlänk</span>
-            <input id="matchLinkInput" type="text" placeholder="Klistra in matchlänken här">
-          </label>
-
-          <div class="grid2">
-            <label class="field">
-              <span>Hemmalag</span>
-              <input id="homeTeamInput" type="text" placeholder="Hemmalag">
-            </label>
-
-            <label class="field">
-              <span>Bortalag</span>
-              <input id="awayTeamInput" type="text" placeholder="Bortalag">
-            </label>
-          </div>
-        </div>
-
-        <div class="adminSection">
-          <div class="adminSectionTitle">Trupp hemmalag</div>
-          <label class="field">
-            <span>Klistra in trupptext</span>
-            <textarea id="rosterInput" rows="8" placeholder="Klistra in hemmalagets trupp här"></textarea>
-          </label>
-        </div>
-
-        <div class="adminSection">
-          <div class="adminSectionTitle">Fasta bets</div>
-          <div id="fixedBetsAdmin" class="adminList"></div>
-        </div>
-
-        <div class="adminSection">
-          <div class="adminSectionTitle">Sidebets</div>
-          <div id="sidebetsAdmin" class="adminList"></div>
-        </div>
-
-        <div class="adminSection dangerSection">
-          <div class="adminSectionTitle">Farligt</div>
-          <div class="adminDangerText">
-            Nollställ omgång raderar deltagare, kuponger och omgångsinfo.
-          </div>
-        </div>
-      </div>
-
-      <div class="modalFoot adminFoot">
-        <button id="resetRoundBtn" class="ghostBtn" type="button">Nollställ omgång</button>
-        <button id="saveAdminBtn" class="mainBtn" type="button">Spara omgång</button>
-      </div>
-    </div>
+  <div class="card glass timer">
+    <div id="timerText">5m</div>
   </div>
 
-  <!-- QR popup -->
-  <div id="qrModal" class="modal hidden">
-    <div class="qrBackdrop"></div>
+  <div class="card image"></div>
+  <div class="card image"></div>
 
-    <div class="modalCard qrCard">
-      <div class="modalHead">
-        <div>
-          <div class="miniLabel">QR</div>
-          <h2>Scanna för att gå in</h2>
-        </div>
-        <button id="closeQrBtn" class="iconBtn" type="button">✕</button>
-      </div>
+  <div class="card glass tall">Anteckningar</div>
 
-      <div class="modalBody qrModalBody">
-        <canvas id="qrCanvasBig" width="220" height="220"></canvas>
-        <div id="qrUrlText" class="qrUrlText"></div>
-      </div>
-    </div>
+  <div class="card solid pink">Familjenotiser</div>
+
+  <div class="card solid teal">Träningar</div>
+
+  <div class="card solid teal">Matcher</div>
+
+  <div class="card solid teal" id="calendar">
+    <div class="calendar-title">Idag</div>
+    <div id="events"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
-  <script type="module" src="app.js"></script>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
