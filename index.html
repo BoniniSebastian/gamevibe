@@ -15,168 +15,119 @@
   <div class="blob blobMain"></div>
   <div class="vignette"></div>
 
-  <button id="refreshBtn" class="refreshBtn floating" type="button" aria-label="Uppdatera">↻</button>
-
   <button id="qrDock" class="qrDock" type="button" aria-label="Visa QR">
     <canvas id="qrCanvasMini" width="72" height="72"></canvas>
   </button>
 
   <main class="appShell">
-    <section id="board" class="board" aria-label="Dashboard">
-
-      <section id="timeCard" class="widget glass cardTime" data-widget-id="timeCard" aria-label="Tid och datum">
-        <div class="widgetInner centeredCard timeInner">
+    <aside class="hud" aria-label="Status">
+      <div class="hudTop">
+        <div class="clockWrap">
           <div id="timeBig" class="timeBig">11:14</div>
           <div id="dateBig" class="dateBig">Onsdag - 1 april</div>
         </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
-      </section>
 
-      <section id="profileCard" class="widget glass cardProfile" data-widget-id="profileCard" aria-label="Profil">
-        <div class="widgetInner centeredCard">
-          <div class="widgetTitle smallTitle profileTitle">Profil</div>
-          <div class="profileCardBody">
-            <button id="profileCircleBtn" class="profileCircleBtn" type="button" aria-label="Välj profil">
-              <span id="profileCircleText">SB</span>
-            </button>
-            <div class="profileLine">
-              <button id="profileTabSB" class="profileMiniBtn active" type="button">SB</button>
-              <span class="profileDot">•</span>
-              <button id="profileTabJA" class="profileMiniBtn" type="button">JA</button>
+        <div class="profileWrap">
+          <button id="profileCircleBtn" class="profileCircleBtn" type="button" aria-label="Välj profil">
+            <span id="profileCircleText">SB</span>
+          </button>
+
+          <div class="profileLine">
+            <button id="profileTabSB" class="profileMiniBtn active" type="button">SB</button>
+            <span class="profileDot">•</span>
+            <button id="profileTabJA" class="profileMiniBtn" type="button">JA</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hudBottom">
+        <button id="refreshBtn" class="refreshBtn" type="button" aria-label="Uppdatera">↻</button>
+
+        <div id="weatherAmbient" class="weatherAmbient">
+          <div class="weatherIconDot"></div>
+          <div class="weatherText">
+            <div id="weatherTemp" class="weatherTemp">--°</div>
+            <div id="weatherLabel" class="weatherLabel">Laddar väder</div>
+            <div id="weatherMeta" class="weatherMeta">...</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="board" aria-label="Dashboard">
+      <button id="freeTextCard" class="widget glass cardFreeText" type="button">
+        <div class="widgetTitle">Fritext</div>
+        <div id="freeTextPreview" class="widgetTextPreview">Tryck för att skriva.</div>
+      </button>
+
+      <button id="listsCard" class="widget glass cardLists" type="button">
+        <div class="widgetTitle">Listor</div>
+        <div id="listsPreview" class="listsPreview"></div>
+      </button>
+
+      <section id="timerCard" class="widget glass cardTimer" tabindex="0" aria-label="Timer">
+        <div class="timerArea">
+          <div class="timerRingWrap">
+            <svg class="timerSvg" viewBox="0 0 220 220" aria-hidden="true">
+              <defs>
+                <linearGradient id="timerStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#5cefff"></stop>
+                  <stop offset="50%" stop-color="#d850ff"></stop>
+                  <stop offset="100%" stop-color="#ff8b3e"></stop>
+                </linearGradient>
+              </defs>
+              <circle class="timerTrack" cx="110" cy="110" r="94"></circle>
+              <circle id="timerProgress" class="timerProgress" cx="110" cy="110" r="94"></circle>
+            </svg>
+
+            <div class="timerCenter">
+              <div class="timerMiniLabel">TIMER</div>
+              <div id="timerPresetText" class="timerPresetText">5m</div>
+              <div id="timerStatus" class="timerStatus">Tryck för att starta</div>
             </div>
           </div>
         </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
       </section>
 
-      <section id="weatherCard" class="widget glass cardWeather" data-widget-id="weatherCard" aria-label="Väder">
-        <div class="widgetInner">
-          <div class="widgetTitle smallTitle">Väder</div>
-          <div id="weatherAmbient" class="weatherAmbient">
-            <div class="weatherIconDot"></div>
-            <div class="weatherText">
-              <div id="weatherTemp" class="weatherTemp">--°</div>
-              <div id="weatherLabel" class="weatherLabel">Laddar väder</div>
-              <div id="weatherMeta" class="weatherMeta">...</div>
-            </div>
-          </div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
-      </section>
-
-      <button id="freeTextCard" class="widget glass cardFreeText" data-widget-id="freeTextCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Fritext</div>
-          <div id="freeTextPreview" class="widgetTextPreview">Tryck för att skriva.</div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
-      </button>
-
-      <button id="listsCard" class="widget glass cardLists" data-widget-id="listsCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Listor</div>
-          <div id="listsPreview" class="listsPreview"></div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
-      </button>
-
-      <section id="timerCard" class="widget glass cardTimer" data-widget-id="timerCard" tabindex="0" aria-label="Timer">
-        <div class="widgetInner timerCardInner">
-          <div class="timerArea">
-            <div class="timerRingWrap">
-              <svg class="timerSvg" viewBox="0 0 220 220" aria-hidden="true">
-                <defs>
-                  <linearGradient id="timerStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#5cefff"></stop>
-                    <stop offset="50%" stop-color="#d850ff"></stop>
-                    <stop offset="100%" stop-color="#ff8b3e"></stop>
-                  </linearGradient>
-                </defs>
-                <circle class="timerTrack" cx="110" cy="110" r="94"></circle>
-                <circle id="timerProgress" class="timerProgress" cx="110" cy="110" r="94"></circle>
-              </svg>
-
-              <div class="timerCenter">
-                <div class="timerMiniLabel">TIMER</div>
-                <div id="timerPresetText" class="timerPresetText">5m</div>
-                <div id="timerStatus" class="timerStatus">Tryck för att starta</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
-      </section>
-
-      <button id="linksCard" class="widget solid solidBlue cardLinks" data-widget-id="linksCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Länkar</div>
-          <div id="linksPreview" class="solidPreview"></div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
-      </button>
-
-      <button id="imageOneCard" class="widget imageCard cardImageOne" data-widget-id="imageOneCard" type="button" aria-label="Bild 1">
+      <button id="imageOneCard" class="widget imageCard cardImageOne" type="button" aria-label="Bild 1">
         <img id="imageOnePreview" class="imagePreview hidden" alt="Bild 1" />
         <div id="imageOnePlaceholder" class="imagePlaceholder">
           <div class="imagePlaceholderLabel">Bild 1</div>
           <div class="imagePlaceholderSub">Tryck för att lägga till</div>
         </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
       </button>
 
-      <button id="imageTwoCard" class="widget imageCard cardImageTwo" data-widget-id="imageTwoCard" type="button" aria-label="Bild 2">
+      <button id="imageTwoCard" class="widget imageCard cardImageTwo" type="button" aria-label="Bild 2">
         <img id="imageTwoPreview" class="imagePreview hidden" alt="Bild 2" />
         <div id="imageTwoPlaceholder" class="imagePlaceholder">
           <div class="imagePlaceholderLabel">Bild 2</div>
           <div class="imagePlaceholderSub">Tryck för att lägga till</div>
         </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
       </button>
 
-      <button id="notesCard" class="widget glass cardNotes" data-widget-id="notesCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Anteckningar</div>
-          <div id="notesPreview" class="notesPreview"></div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
+      <button id="notesCard" class="widget glass cardNotes" type="button">
+        <div class="widgetTitle">Anteckningar</div>
+        <div id="notesPreview" class="notesPreview"></div>
       </button>
 
-      <button id="noticesCard" class="widget solid solidPink cardNotices" data-widget-id="noticesCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Familjenotiser</div>
-          <div id="noticesPreview" class="solidPreview"></div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
+      <button id="noticesCard" class="widget solid solidPink cardNotices" type="button">
+        <div class="widgetTitle">Familjenotiser</div>
+        <div id="noticesPreview" class="solidPreview"></div>
       </button>
 
-      <button id="trainingsCard" class="widget solid solidBlue cardTrainings" data-widget-id="trainingsCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Träningar</div>
-          <div id="trainingsPreview" class="solidPreview"></div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
+      <button id="trainingsCard" class="widget solid solidBlue cardTrainings" type="button">
+        <div class="widgetTitle">Träningar</div>
+        <div id="trainingsPreview" class="solidPreview"></div>
       </button>
 
-      <button id="matchesCard" class="widget solid solidBlue cardMatches" data-widget-id="matchesCard" type="button">
-        <div class="widgetInner">
-          <div class="widgetTitle">Matcher</div>
-          <div id="matchesPreview" class="solidPreview"></div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
+      <button id="matchesCard" class="widget solid solidBlue cardMatches" type="button">
+        <div class="widgetTitle">Matcher</div>
+        <div id="matchesPreview" class="solidPreview"></div>
       </button>
 
-      <section id="calendarCard" class="widget solid solidBlue cardCalendar" data-widget-id="calendarCard" aria-label="Google Kalender">
-        <div class="widgetInner">
-          <div class="widgetTitle">Kalender</div>
-          <div id="calendarCardBody" class="calendarCardBody">
-            <div id="calendarFallback" class="calendarFallback hidden">Kalender ej kopplad ännu</div>
-            <div id="calendarEmbedWrap" class="calendarEmbedWrap hidden">
-              <iframe id="calendarFrame" title="Google kalender" loading="lazy"></iframe>
-              <div class="calendarOverlay"></div>
-            </div>
-          </div>
-        </div>
-        <div class="resizeHandle" aria-hidden="true"></div>
+      <section class="widget solid solidBlue cardCalendar" aria-label="Google Kalender">
+        <div class="widgetTitle">Idag</div>
+        <div id="calendarTodayPreview" class="calendarPreview"></div>
       </section>
     </section>
   </main>
