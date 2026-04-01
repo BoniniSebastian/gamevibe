@@ -2,6 +2,7 @@
   --bg:#050b12;
   --text:#f5f7fb;
   --muted:rgba(255,255,255,.62);
+  --muted-2:rgba(255,255,255,.38);
 
   --glass-border:rgba(255,255,255,.05);
 
@@ -12,8 +13,10 @@
   --pink:#d74fff;
   --orange:#ff8f43;
 
-  --board-w:1340px;
+  --board-w:1240px;
   --gap:14px;
+  --cell-w:100px;
+  --cell-h:64px;
 }
 
 *{
@@ -128,7 +131,22 @@ textarea::placeholder{
   width:100%;
   height:100vh;
   overflow:hidden;
-  padding:28px 28px 28px 28px;
+  padding:104px 28px 28px 28px;
+}
+
+.refreshBtn.floating{
+  position:fixed;
+  left:calc(50% - (var(--board-w) / 2) - 4px);
+  top:62px;
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  z-index:20;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.02);
+  color:var(--muted);
+  backdrop-filter:blur(12px);
 }
 
 .qrDock{
@@ -140,6 +158,9 @@ textarea::placeholder{
   display:grid;
   place-items:center;
   z-index:10;
+  border:none;
+  background:transparent;
+  padding:0;
 }
 
 #qrCanvasMini,
@@ -147,24 +168,40 @@ textarea::placeholder{
   background:#fff;
   padding:6px;
   border-radius:0;
+  display:block;
 }
 
 .board{
   width:min(100%, var(--board-w));
   margin:0 auto;
-  height:calc(100vh - 56px);
-  display:grid;
-  grid-template-columns:240px 310px 250px 250px 250px;
-  grid-template-rows:160px 150px 190px 190px 230px;
-  gap:var(--gap);
+  height:calc(100vh - 132px);
   align-content:start;
+  position:relative;
 }
 
 .widget{
   overflow:hidden;
   text-align:left;
   border-radius:0;
+  position:absolute;
+  user-select:none;
+  touch-action:none;
+}
+
+.widgetInner{
   position:relative;
+  z-index:1;
+  width:100%;
+  height:100%;
+  padding:16px;
+  overflow:hidden;
+}
+
+.centeredCard{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
 }
 
 .glass{
@@ -250,110 +287,22 @@ textarea::placeholder{
   font-size:17px;
 }
 
+.profileTitle{
+  margin-bottom:10px;
+}
+
 .widgetTextPreview{
   position:relative;
   z-index:1;
   font-size:18px;
   color:var(--muted);
   line-height:1.45;
+  white-space:pre-wrap;
 }
 
-/* Grid placement */
-.cardTime{
-  grid-column:1;
-  grid-row:1;
-  padding:18px 16px;
-}
-
-.cardProfile{
-  grid-column:1;
-  grid-row:2;
-  padding:16px;
-}
-
-.cardWeather{
-  grid-column:1;
-  grid-row:3;
-  padding:16px;
-}
-
-.cardFreeText{
-  grid-column:2;
-  grid-row:1 / span 3;
-  padding:22px 18px;
-}
-
-.cardLists{
-  grid-column:3;
-  grid-row:1;
-  padding:16px;
-}
-
-.cardTimer{
-  grid-column:4;
-  grid-row:1;
-}
-
-.cardLinks{
-  grid-column:5;
-  grid-row:1 / span 2;
-  padding:16px;
-}
-
-.cardImageOne{
-  grid-column:3 / span 2;
-  grid-row:2;
-}
-
-.cardImageTwo{
-  grid-column:5;
-  grid-row:3;
-}
-
-.cardNotes{
-  grid-column:5;
-  grid-row:4 / span 2;
-  padding:18px 16px;
-}
-
-.cardNotices{
-  grid-column:1 / span 2;
-  grid-row:4 / span 2;
-  padding:18px 16px;
-}
-
-.cardTrainings{
-  grid-column:3;
-  grid-row:3 / span 3;
-  padding:16px;
-}
-
-.cardMatches{
-  grid-column:4;
-  grid-row:3 / span 2;
-  padding:16px;
-}
-
-.cardCalendar{
-  grid-column:4;
-  grid-row:5;
-  padding:16px;
-}
-
-.timeCardTop{
-  display:flex;
-  justify-content:flex-start;
-  margin-bottom:10px;
-}
-
-.refreshBtn{
-  width:34px;
-  height:34px;
-  display:grid;
-  place-items:center;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.02);
-  color:var(--muted);
+.timeInner{
+  gap:8px;
+  text-align:center;
 }
 
 .timeBig{
@@ -364,12 +313,12 @@ textarea::placeholder{
 }
 
 .dateBig{
-  margin-top:6px;
   font-size:22px;
   line-height:1.05;
   color:rgba(255,255,255,.92);
   font-weight:800;
   letter-spacing:-.03em;
+  text-align:center;
 }
 
 .profileCardBody{
@@ -377,7 +326,8 @@ textarea::placeholder{
   flex-direction:column;
   gap:16px;
   justify-content:center;
-  height:calc(100% - 34px);
+  align-items:center;
+  width:100%;
 }
 
 .profileCircleBtn{
@@ -521,6 +471,14 @@ textarea::placeholder{
   color:rgba(255,255,255,.84);
 }
 
+.linkPreviewRow{
+  cursor:pointer;
+}
+
+.timerCardInner{
+  padding:10px;
+}
+
 .timerArea{
   position:absolute;
   inset:0;
@@ -530,8 +488,8 @@ textarea::placeholder{
 
 .timerRingWrap{
   position:relative;
-  width:164px;
-  height:164px;
+  width:154px;
+  height:154px;
   display:grid;
   place-items:center;
 }
@@ -561,8 +519,8 @@ textarea::placeholder{
 .timerCenter{
   position:relative;
   z-index:1;
-  width:122px;
-  height:122px;
+  width:112px;
+  height:112px;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -583,7 +541,7 @@ textarea::placeholder{
 
 .timerPresetText{
   margin-top:4px;
-  font-size:30px;
+  font-size:28px;
   line-height:1;
   font-weight:900;
   letter-spacing:-.05em;
@@ -593,12 +551,14 @@ textarea::placeholder{
   margin-top:4px;
   font-size:10px;
   color:var(--muted);
+  text-align:center;
 }
 
 .calendarCardBody{
   position:relative;
   height:calc(100% - 42px);
   overflow:hidden;
+  background:rgba(0,0,0,.08);
 }
 
 .calendarEmbedWrap{
@@ -609,9 +569,10 @@ textarea::placeholder{
 
 .calendarEmbedWrap iframe{
   position:absolute;
-  inset:-118px 0 -310px 0;
+  left:0;
+  top:-132px;
   width:100%;
-  height:760px;
+  height:830px;
   border:0;
   filter:grayscale(.08) contrast(.95) brightness(.88);
   pointer-events:none;
@@ -633,6 +594,18 @@ textarea::placeholder{
   font-size:13px;
 }
 
+.resizeHandle{
+  position:absolute;
+  right:6px;
+  bottom:6px;
+  width:14px;
+  height:14px;
+  border-right:2px solid rgba(255,255,255,.28);
+  border-bottom:2px solid rgba(255,255,255,.28);
+  cursor:nwse-resize;
+  z-index:3;
+}
+
 .modalRoot{
   position:fixed;
   inset:0;
@@ -652,7 +625,7 @@ textarea::placeholder{
   top:50%;
   transform:translate(-50%,-50%);
   width:min(620px, calc(100vw - 40px));
-  height:min(760px, calc(100vh - 40px));
+  height:min(820px, calc(100vh - 28px));
   background:linear-gradient(180deg, rgba(10,16,24,.97), rgba(8,13,21,.94));
   border:1px solid rgba(255,255,255,.08);
   display:flex;
@@ -864,16 +837,20 @@ textarea::placeholder{
   display:none !important;
 }
 
-/* Mobile */
 @media (max-width: 980px){
   body{
     overflow:auto;
   }
 
+  .refreshBtn.floating{
+    left:14px;
+    top:14px;
+  }
+
   .appShell{
     height:auto;
     min-height:100vh;
-    padding:18px 14px 110px;
+    padding:64px 14px 110px;
     overflow:visible;
   }
 
@@ -886,14 +863,25 @@ textarea::placeholder{
 
   .board{
     width:100%;
-    height:auto;
+    height:auto !important;
+    display:grid;
     grid-template-columns:1fr 1fr;
     grid-template-rows:auto;
     gap:12px;
   }
 
   .widget{
+    position:relative !important;
     min-height:160px;
+    left:auto !important;
+    top:auto !important;
+    width:auto !important;
+    height:auto !important;
+    touch-action:auto;
+  }
+
+  .resizeHandle{
+    display:none;
   }
 
   .cardTime,
