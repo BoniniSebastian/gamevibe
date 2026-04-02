@@ -588,13 +588,13 @@ textarea::placeholder{
 }
 
 .solidMain{
-  font-size:14px;
+  font-size:13px;   /* var 14 eller 16 */
   font-weight:700;
 }
 
 .solidSub{
   margin-top:3px;
-  font-size:12px;
+  font-size:11px;   /* var 12 eller 14 */
   color:rgba(255,255,255,.82);
 }
 
