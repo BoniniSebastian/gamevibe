@@ -24,7 +24,7 @@
   --left-rail-w:300px;
 
   /* Main board = 4 kolumner à 300 + 3 gaps */
-  --board-w:1236px;
+  --board-w:1548px;
 
   /* Högsta kolumnen i main board */
   --board-h:1058px;
@@ -552,6 +552,15 @@ textarea::placeholder{
   border:0;
   background:transparent;
 }
+
+.cardLinks{
+  left:calc((var(--card-w) * 4) + (var(--gap) * 4)); /* kolumn 5 */
+  top:0;                                             /* samma rad som anteckningar */
+  width:var(--card-w);
+  height:var(--size-m);
+  padding:18px;
+}
+
 
 .cardImageTwo{
   left:calc((var(--card-w) * 3) + (var(--gap) * 3));
