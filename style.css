@@ -302,11 +302,14 @@ textarea::placeholder{
 }
 
 .clockWrap{
+  position:relative;
+  min-height:var(--size-s);
+  padding:18px 18px 16px;
   display:flex;
   flex-direction:column;
-  justify-content:center;   /* vertikalt */
-  align-items:center;       /* horisontellt */
-  text-align:center;        /* text */
+  justify-content:center;
+  align-items:center;
+  text-align:center;
 }
 
 .timeBig{
