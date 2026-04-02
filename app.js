@@ -1247,32 +1247,6 @@ async function loadCalendarEvents() {
   return;
 }
 
-  calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Laddar dagens händelser...</div>`;
-
-  try {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(icsUrl)}`;
-    const res = await fetch(proxyUrl);
-    const icsText = await res.text();
-    const events = parseICS(icsText);
-    const todayEvents = filterEventsForToday(events);
-
-    if (!todayEvents.length) {
-      calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Inga händelser idag</div>`;
-      return;
-    }
-
-    calendarTodayPreview.innerHTML = todayEvents.slice(0, 5).map((item) => `
-      <div>
-        <div class="solidMain"><span class="calendarTime">${escapeHtml(item.time)}</span>${escapeHtml(item.summary)}</div>
-        ${item.location ? `<div class="solidSub">${escapeHtml(item.location)}</div>` : ""}
-      </div>
-    `).join("");
-  } catch (err) {
-    console.error(err);
-    calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Kunde inte läsa kalendern just nu</div>`;
-  }
-}
-
 function parseICS(icsText) {
   const rawLines = String(icsText || "").replace(/\r/g, "").split("\n");
   const lines = [];
