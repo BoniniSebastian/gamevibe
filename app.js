@@ -360,6 +360,7 @@ function setupWidgetEvents() {
   $("matchesCard").addEventListener("click", () => openWidgetModal("matches"));
   $("imageOneCard").addEventListener("click", () => openWidgetModal("images", { slot: "one" }));
   $("imageTwoCard").addEventListener("click", () => openWidgetModal("images", { slot: "two" }));
+  $("linksCard").addEventListener("click", () => openWidgetModal("links"));
 }
 
 function renderAll() {
@@ -638,6 +639,13 @@ function openWidgetModal(type, meta = null) {
   state.openModalType = type;
   state.openModalMeta = meta;
   modalDeleteBtn.classList.add("hidden");
+  
+  if (type === "links") {
+  modalTitle.textContent = "Länkar";
+  modalBody.innerHTML = renderLinksEditor(state.profileData.links || []);
+  bindLinksEditor();
+  modalDeleteBtn.classList.remove("hidden");
+}
 
   if (type === "freeText") {
     modalTitle.textContent = "Fritext";
@@ -712,6 +720,11 @@ async function saveCurrentModal() {
     closeModal();
     return;
   }
+  if (type === "links") {
+  await updateProfileData({ links: collectLinks() });
+  closeModal();
+  return;
+}
 
   if (type === "notes") {
     await updateProfileData({ notes: collectNotesEditor() });
@@ -765,6 +778,12 @@ async function deleteCurrentModal() {
     closeModal();
     return;
   }
+  if (type === "links") {
+  await updateProfileData({ links: [] });
+  closeModal();
+  return;
+}
+  
   if (type === "notes") {
     await updateProfileData({ notes: [] });
     closeModal();
@@ -808,6 +827,66 @@ async function updateProfileData(patch) {
     ...patch,
     updatedAt: serverTimestamp()
   });
+}
+
+function bindLinksEditor() {
+  $("addLinkBtn")?.addEventListener("click", () => {
+    const items = collectLinks();
+    items.push({ name: "", url: "" });
+    modalBody.innerHTML = renderLinksEditor(items);
+    bindLinksEditor();
+  });
+
+  modalBody.querySelectorAll("[data-link-remove]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.linkRemove);
+      const items = collectLinks();
+      items.splice(idx, 1);
+      modalBody.innerHTML = renderLinksEditor(items.length ? items : []);
+      bindLinksEditor();
+    });
+  });
+}
+
+function collectLinks() {
+  const rows = [...modalBody.querySelectorAll("[data-link-index]")];
+
+  return rows.map((_, idx) => {
+    const name = modalBody.querySelector(`[data-link-name="${idx}"]`)?.value || "";
+    const url = modalBody.querySelector(`[data-link-url="${idx}"]`)?.value || "";
+    return { name, url };
+  }).filter(item => item.name && item.url);
+}
+
+function renderLinksEditor(items) {
+  const rows = items.length ? items : [{ name: "", url: "" }];
+
+  return `
+    <div class="rowStack">
+      ${rows.map((item, idx) => `
+        <div class="entryCard" data-link-index="${idx}">
+          <div class="entryTop">
+            <div class="entryTitle">Länk ${idx + 1}</div>
+            <div class="entryActions">
+              <button class="iconMiniBtn" data-link-remove="${idx}">✕</button>
+            </div>
+          </div>
+
+          <div class="fieldBlock">
+            <label>Namn</label>
+            <input type="text" data-link-name="${idx}" value="${escapeAttr(item.name)}">
+          </div>
+
+          <div class="fieldBlock">
+            <label>URL</label>
+            <input type="text" data-link-url="${idx}" value="${escapeAttr(item.url)}">
+          </div>
+        </div>
+      `).join("")}
+
+      <button id="addLinkBtn" class="ghostBtn">+ Lägg till</button>
+    </div>
+  `;
 }
 
 function renderNotesEditor(notes) {
