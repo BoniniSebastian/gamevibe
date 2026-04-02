@@ -503,7 +503,7 @@ textarea::placeholder{
   left:calc((var(--card-w) * 2) + (var(--gap) * 2));
   top:calc(var(--size-m) + var(--gap));
   width:var(--card-w);
-  height:var(--size-m);
+  height:var(--size-l);
   padding:18px;
 }
 
